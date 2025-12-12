@@ -1,0 +1,112 @@
+#include <iostream>
+#include <algorithm>
+#include <climits>
+#include <cmath>
+using namespace std;
+
+int prost(int n){
+        n = abs(n);
+        if (n < 2)  {
+            return 0;
+        }
+        for (int i=2; i<=sqrt(n); i++){
+            if (n%i == 0){
+                return 0;
+            }
+        } return 1;
+    }
+
+int main() {
+    int r, c;   
+    cout << "Введите число строк и столбцов: ";
+    cin >> r >> c;
+    
+    double* br = new double[r];
+    double* bc = new double[c];
+    int** matrix = new int*[r];
+    
+    for (int i=0; i<r; i++){
+        matrix[i] = new int[c];
+    }
+    
+    for (int i=0; i<r; i++){
+        for (int j=0; j<c; j++) {
+            cout << "Введите элемент " << i+1 << " " << j+1 << ": ";
+            cin >> matrix[i][j];
+        }
+    }
+    
+
+   
+    //1
+    //     for(int i=0; i!=r; i++){
+    //         int k=0;
+    //         for(int j=0; j!=c; j++){
+    //             if (matrix[i][j] >= 0) {
+    //                 k++;
+    //             }
+    //         } br[i] = k;
+    //     }
+    //     for (int i=0; i<max(r,c); i++) {
+    //         cout << "Число неотрицательных элементов в " << i+1 << " строке: " << br[i] << endl;
+    //     } delete[] br;
+    // }
+
+    //2
+    // double* sum = new double[c]{0.0};
+    // int* quan = new int[c]{0};
+    // for(int i=0; i!=r; i++){
+    //     for(int j=0; j!=c; j++){
+    //         if (matrix[i][j] > 0) {
+    //             sum[j] += matrix[i][j];
+    //             quan[j]++;
+    //         }
+    //     }
+    // } for (int i=0; i!=c; i++) {
+    //         bc[i] = sum[i]/quan[i];
+    //         cout << "Среднее арифметическое положительных элементов " << i+1 << " столбца: " << bc[i] << endl;
+    //     } delete[] matrix;
+    //   delete[] bc;
+    // }
+
+    //3
+    // for(int i=0; i!=r; i++){
+    //     int mn = INT_MAX;
+    //     for(int j=0; j!=c; j++){
+    //         if (matrix[i][j] < mn) {
+    //             mn = matrix[i][j];
+    //         }
+    //     } br[i] = mn;
+    // }
+    // for (int i=0; i<max(r,c); i++) {
+    //     cout << "Минимальный элемент в " << i+1 << " строке: " << br[i] << endl;
+    // } delete[] br;}
+
+
+    //4
+    // for(int i=0; i!=r; i++){
+    //     int mx = INT_MIN;
+    //     for(int j=0; j!=c; j++){
+    //         if (matrix[i][j] > mx) {
+    //             mx = matrix[i][j];
+    //             br[i] = j;
+    //         }
+    //     }
+    // }
+    // for (int i=0; i<max(r,c); i++) {
+    //     cout << "Номер максимального элемента в " << i+1 << " строке: " << br[i] << endl;
+    // } delete[] br; }
+
+    //5  
+    // for(int i=0; i!=r; i++){
+    //     int k = 0;
+    //     for(int j=0; j!=c; j++){
+    //         if (prost(matrix[i][j])) {
+    //             k++;
+    //         }
+    //     } br[i] = k;
+    // }
+    // for (int i=0; i<max(r,c); i++) {
+    //     cout << "Кол-во простых чисел в " << i+1 << " строке: " << br[i] << endl;
+    // } delete[] br;}
+  
