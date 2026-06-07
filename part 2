@@ -1,112 +1,383 @@
+#include <string>
 #include <iostream>
-#include <algorithm>
-#include <climits>
-#include <cmath>
+#include <fstream>
+#include <cstring>
 using namespace std;
 
-int prost(int n){
-        n = abs(n);
-        if (n < 2)  {
-            return 0;
-        }
-        for (int i=2; i<=sqrt(n); i++){
-            if (n%i == 0){
-                return 0;
-            }
-        } return 1;
+struct BOOK {
+    string title;
+    string author;
+    int year;
+    string publisher;
+    int pages;
+    BOOK* next;
+
+    BOOK(string t, string a, int y, string pub, int p) {
+        title = t;
+        author = a;
+        year = y;
+        publisher = pub;
+        pages = p;
+        next = NULL;
     }
+
+    BOOK() {
+        title = "";
+        author = "";
+        year = 0;
+        publisher = "";
+        pages = 0;
+        next = NULL;
+    }
+
+    void Show() const {
+        cout << "Название: " << title
+             << "Автор: " << author
+             << "Год: " << year
+             << "Издательство: " << publisher
+             << "Страниц: " << pages << endl;
+    }
+
+    bool Equals(const BOOK* other) const {
+        return title == other->title &&
+               author == other->author &&
+               year == other->year &&
+               publisher == other->publisher &&
+               pages == other->pages;
+    }
+};
+
+struct HEAD {
+    BOOK* first;   
+    int count;     
+
+    HEAD() {
+        first = NULL;
+        count = 0;
+    }
+};
+
+BOOK* inputBook() {
+    string t, a, pub;
+    int y, p;
+    cout << "Название: ";      cin.ignore(); getline(cin, t);
+    cout << "Автор: ";         getline(cin, a);
+    cout << "Год издания: ";   cin >> y;
+    cout << "Издательство: ";  cin.ignore(); getline(cin, pub);
+    cout << "Страниц: ";       cin >> p;
+    return new BOOK(t, a, y, pub, p);
+}
+
+void addToBegin(HEAD* h, BOOK* b) {
+    b->next = h->first;
+    h->first = b;
+    h->count++;
+}
+
+void addToEnd(HEAD* h, BOOK* b) {
+    if (h->first == NULL) {
+        h->first = b;
+    } else {
+        BOOK* curr = h->first;
+        while (curr->next != NULL) curr = curr->next;
+        curr->next = b;
+    }
+    h->count++;
+}
+
+void addAfter(HEAD* h, BOOK* b, int pos) {
+    if (pos <= 0 || h->first == NULL) {
+        addToBegin(h, b);
+        return;
+    }
+    BOOK* curr = h->first;
+    for (int i = 1; i < pos && curr->next != NULL; i++) {
+        curr = curr->next;
+    }
+    b->next = curr->next;
+    curr->next = b;
+    h->count++;
+}
+
+void deleteBook(HEAD* h, int pos) {
+    if (h->first == NULL) {
+        cout << "Список пуст.\n";
+        return;
+    }
+    if (pos == 1) {
+        BOOK* tmp = h->first;
+        h->first = h->first->next;
+        delete tmp;
+        h->count--;
+        cout << "Книга удалена.\n";
+        return;
+    }
+    BOOK* curr = h->first;
+    for (int i = 1; i < pos - 1 && curr->next != NULL; i++) {
+        curr = curr->next;
+    }
+    if (curr->next == NULL) {
+        cout << "Элемент с таким номером не найден.\n";
+        return;
+    }
+    BOOK* tmp = curr->next;
+    curr->next = tmp->next;
+    delete tmp;
+    h->count--;
+    cout << "Книга удалена.\n";
+}
+
+void searchByTitle(HEAD* h, const string& query) {
+    bool found = false;
+    BOOK* curr = h->first;
+    int i = 1;
+    while (curr != NULL) {
+        if (curr->title == query) {
+            curr->Show();
+            found = true;
+        }
+        curr = curr->next;
+        i++;
+    }
+    if (!found) cout << "Не найдено.\n";
+}
+
+void searchByAuthor(HEAD* h, const string& query) {
+    bool found = false;
+    BOOK* curr = h->first;
+    int i = 1;
+    while (curr != NULL) {
+        if (curr->author == query) {
+            cout << "[" << i << "] "; curr->Show();
+            found = true;
+        }
+        curr = curr->next;
+        i++;
+    }
+    if (!found) cout << "Не найдено.\n";
+}
+
+void searchByYear(HEAD* h, int year) {
+    bool found = false;
+    BOOK* curr = h->first;
+    int i = 1;
+    while (curr != NULL) {
+        if (curr->year == year) {
+            cout << "[" << i << "] "; curr->Show();
+            found = true;
+        }
+        curr = curr->next;
+        i++;
+    }
+    if (!found) cout << "Не найдено.\n";
+}
+
+void printAll(HEAD* h) {
+    if (h->first == NULL) {
+        cout << "Список пуст.\n";
+        return;
+    }
+    cout << "Всего книг: " << h->count << endl;
+    BOOK* curr = h->first;
+    int i = 1;
+    while (curr != NULL) {
+        cout << "[" << i++ << "] ";
+        curr->Show();
+        curr = curr->next;
+    }
+}
+
+void writeString(ofstream& f, const string& s) {
+    int len = s.size();
+    f.write((char*)&len, sizeof(int));
+    f.write(s.c_str(), len);
+}
+
+string readString(ifstream& f) {
+    int len;
+    f.read((char*)&len, sizeof(int));
+    char* buf = new char[len + 1];
+    f.read(buf, len);
+    buf[len] = '\0';
+    string s(buf);
+    delete[] buf;
+    return s;
+}
+
+void saveToFile(HEAD* h, const string& filename) {
+    ofstream f(filename, ios::binary);
+    if (!f) { cout << "Ошибка открытия файла.\n"; return; }
+    f.write((char*)&h->count, sizeof(int));
+    BOOK* curr = h->first;
+    while (curr != NULL) {
+        writeString(f, curr->title);
+        writeString(f, curr->author);
+        f.write((char*)&curr->year, sizeof(int));
+        writeString(f, curr->publisher);
+        f.write((char*)&curr->pages, sizeof(int));
+        curr = curr->next;
+    }
+    f.close();
+}
+
+void loadFromFile(HEAD* h, const string& filename) {
+    BOOK* curr = h->first;
+    while (curr != NULL) {
+        BOOK* tmp = curr->next;
+        delete curr;
+        curr = tmp;
+    }
+    h->first = NULL;
+    h->count = 0;
+
+    ifstream f(filename, ios::binary);
+    if (!f) { cout << "Ошибка открытия файла.\n"; return; }
+
+    int cnt;
+    f.read((char*)&cnt, sizeof(int));
+    for (int i = 0; i < cnt; i++) {
+        string t = readString(f);
+        string a = readString(f);
+        int y; f.read((char*)&y, sizeof(int));
+        string pub = readString(f);
+        int p; f.read((char*)&p, sizeof(int));
+        addToEnd(h, new BOOK(t, a, y, pub, p));
+    }
+    f.close();
+}
+
+void mergeFromFile(HEAD* h, const string& filename) {
+    ifstream f(filename, ios::binary);
+    if (!f) { cout << "Ошибка открытия файла.\n"; return; }
+
+    int cnt;
+    f.read((char*)&cnt, sizeof(int));
+    int added = 0;
+    for (int i = 0; i < cnt; i++) {
+        string t = readString(f);
+        string a = readString(f);
+        int y; f.read((char*)&y, sizeof(int));
+        string pub = readString(f);
+        int p; f.read((char*)&p, sizeof(int));
+
+        BOOK* candidate = new BOOK(t, a, y, pub, p);
+        bool exists = false;
+        BOOK* curr = h->first;
+        while (curr != NULL) {
+            if (curr->Equals(candidate)) { exists = true; break; }
+            curr = curr->next;
+        }
+        if (!exists) {
+            addToEnd(h, candidate);
+            added++;
+        } else {
+            delete candidate;
+        }
+    }
+    f.close();
+}
+
+int menu() {
+    cout << "0. Выход\n"
+         << "1. Добавить в начало\n"
+         << "2. Добавить в конец\n"
+         << "3. Добавить после элемента N\n"
+         << "4. Удалить элемент N\n"
+         << "5. Вывести весь список\n"
+         << "6. Поиск по названию\n"
+         << "7. Поиск по автору\n"
+         << "8. Поиск по году\n"
+         << "9. Сохранить в файл\n"
+         << "10. Загрузить из файла\n"
+         << "11. Добавить новые из файла\n"
+         << "\n"
+         << "Выберите действие: ";
+    int a;
+    cin >> a;
+    return a;
+}
 
 int main() {
-    int r, c;   
-    cout << "Введите число строк и столбцов: ";
-    cin >> r >> c;
-    
-    double* br = new double[r];
-    double* bc = new double[c];
-    int** matrix = new int*[r];
-    
-    for (int i=0; i<r; i++){
-        matrix[i] = new int[c];
-    }
-    
-    for (int i=0; i<r; i++){
-        for (int j=0; j<c; j++) {
-            cout << "Введите элемент " << i+1 << " " << j+1 << ": ";
-            cin >> matrix[i][j];
+    HEAD* h = new HEAD();
+    string filename = "books.bin";
+
+    while (true) {
+        switch (menu()) {
+            case 0:
+                delete h;
+                return 0;
+
+            case 1: {
+                cout << "Введите данные книги:\n";
+                addToBegin(h, inputBook());
+                break;
+            }
+
+            case 2: {
+                cout << "Введите данные книги:\n";
+                addToEnd(h, inputBook());
+                break;
+            }
+
+            case 3: {
+                int pos;
+                cout << "После какого элемента добавить? (номер с 1): ";
+                cin >> pos;
+                cout << "Введите данные книги:\n";
+                addAfter(h, inputBook(), pos);
+                break;
+            }
+
+            case 4: {
+                int pos;
+                cout << "Номер книги для удаления: ";
+                cin >> pos;
+                deleteBook(h, pos);
+                break;
+            }
+
+            case 5:
+                printAll(h);
+                break;
+
+            case 6: {
+                string q;
+                cout << "Введите название: ";
+                cin.ignore(); getline(cin, q);
+                searchByTitle(h, q);
+                break;
+            }
+
+            case 7: {
+                string q;
+                cout << "Введите автора: ";
+                cin.ignore(); getline(cin, q);
+                searchByAuthor(h, q);
+                break;
+            }
+
+            case 8: {
+                int y;
+                cout << "Введите год: ";
+                cin >> y;
+                searchByYear(h, y);
+                break;
+            }
+
+            case 9:
+                saveToFile(h, filename);
+                break;
+
+            case 10:
+                loadFromFile(h, filename);
+                break;
+
+            case 11:
+                mergeFromFile(h, filename);
+                break;
+
+            default:
+                cout << "Неверный выбор.\n";
         }
     }
-    
-
-   
-    //1
-    //     for(int i=0; i!=r; i++){
-    //         int k=0;
-    //         for(int j=0; j!=c; j++){
-    //             if (matrix[i][j] >= 0) {
-    //                 k++;
-    //             }
-    //         } br[i] = k;
-    //     }
-    //     for (int i=0; i<max(r,c); i++) {
-    //         cout << "Число неотрицательных элементов в " << i+1 << " строке: " << br[i] << endl;
-    //     } delete[] br;
-    // }
-
-    //2
-    // double* sum = new double[c]{0.0};
-    // int* quan = new int[c]{0};
-    // for(int i=0; i!=r; i++){
-    //     for(int j=0; j!=c; j++){
-    //         if (matrix[i][j] > 0) {
-    //             sum[j] += matrix[i][j];
-    //             quan[j]++;
-    //         }
-    //     }
-    // } for (int i=0; i!=c; i++) {
-    //         bc[i] = sum[i]/quan[i];
-    //         cout << "Среднее арифметическое положительных элементов " << i+1 << " столбца: " << bc[i] << endl;
-    //     } delete[] matrix;
-    //   delete[] bc;
-    // }
-
-    //3
-    // for(int i=0; i!=r; i++){
-    //     int mn = INT_MAX;
-    //     for(int j=0; j!=c; j++){
-    //         if (matrix[i][j] < mn) {
-    //             mn = matrix[i][j];
-    //         }
-    //     } br[i] = mn;
-    // }
-    // for (int i=0; i<max(r,c); i++) {
-    //     cout << "Минимальный элемент в " << i+1 << " строке: " << br[i] << endl;
-    // } delete[] br;}
-
-
-    //4
-    // for(int i=0; i!=r; i++){
-    //     int mx = INT_MIN;
-    //     for(int j=0; j!=c; j++){
-    //         if (matrix[i][j] > mx) {
-    //             mx = matrix[i][j];
-    //             br[i] = j;
-    //         }
-    //     }
-    // }
-    // for (int i=0; i<max(r,c); i++) {
-    //     cout << "Номер максимального элемента в " << i+1 << " строке: " << br[i] << endl;
-    // } delete[] br; }
-
-    //5  
-    // for(int i=0; i!=r; i++){
-    //     int k = 0;
-    //     for(int j=0; j!=c; j++){
-    //         if (prost(matrix[i][j])) {
-    //             k++;
-    //         }
-    //     } br[i] = k;
-    // }
-    // for (int i=0; i<max(r,c); i++) {
-    //     cout << "Кол-во простых чисел в " << i+1 << " строке: " << br[i] << endl;
-    // } delete[] br;}
-  
+}
